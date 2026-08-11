@@ -10,33 +10,96 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as ArchiveRouteImport } from './routes/archive'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedSavedRouteImport } from './routes/_authenticated/saved'
+import { Route as FactSlugRouteImport } from './routes/fact.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArchiveRoute = ArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSavedRoute = AuthenticatedSavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const FactSlugRoute = FactSlugRouteImport.update({
+  id: '/fact/$slug',
+  path: '/fact/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/archive': typeof ArchiveRoute
+  '/auth': typeof AuthRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/saved': typeof AuthenticatedSavedRoute
+  '/fact/$slug': typeof FactSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/archive': typeof ArchiveRoute
+  '/auth': typeof AuthRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/saved': typeof AuthenticatedSavedRoute
+  '/fact/$slug': typeof FactSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/archive': typeof ArchiveRoute
+  '/auth': typeof AuthRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/saved': typeof AuthenticatedSavedRoute
+  '/fact/$slug': typeof FactSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/archive' | '/auth' | '/profile' | '/saved' | '/fact/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/archive' | '/auth' | '/profile' | '/saved' | '/fact/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/archive'
+    | '/auth'
+    | '/_authenticated/profile'
+    | '/_authenticated/saved'
+    | '/fact/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ArchiveRoute: typeof ArchiveRoute
+  AuthRoute: typeof AuthRoute
+  FactSlugRoute: typeof FactSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +111,71 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/archive': {
+      id: '/archive'
+      path: '/archive'
+      fullPath: '/archive'
+      preLoaderRoute: typeof ArchiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/saved': {
+      id: '/_authenticated/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof AuthenticatedSavedRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/fact/$slug': {
+      id: '/fact/$slug'
+      path: '/fact/$slug'
+      fullPath: '/fact/$slug'
+      preLoaderRoute: typeof FactSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedSavedRoute: typeof AuthenticatedSavedRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedSavedRoute: AuthenticatedSavedRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ArchiveRoute: ArchiveRoute,
+  AuthRoute: AuthRoute,
+  FactSlugRoute: FactSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

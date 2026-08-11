@@ -14,7 +14,130 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_picks: {
+        Row: {
+          created_at: string
+          fact_id: string
+          pick_date: string
+        }
+        Insert: {
+          created_at?: string
+          fact_id: string
+          pick_date: string
+        }
+        Update: {
+          created_at?: string
+          fact_id?: string
+          pick_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_picks_fact_id_fkey"
+            columns: ["fact_id"]
+            isOneToOne: true
+            referencedRelation: "facts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facts: {
+        Row: {
+          category: string
+          created_at: string
+          hook: string
+          id: string
+          intro: string
+          question_type: string
+          slug: string
+          source: string
+          steps: Json
+          surprising_detail: string
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          hook: string
+          id?: string
+          intro: string
+          question_type: string
+          slug: string
+          source?: string
+          steps?: Json
+          surprising_detail: string
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          hook?: string
+          id?: string
+          intro?: string
+          question_type?: string
+          slug?: string
+          source?: string
+          steps?: Json
+          surprising_detail?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          created_at: string
+          fact_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fact_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fact_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_fact_id_fkey"
+            columns: ["fact_id"]
+            isOneToOne: false
+            referencedRelation: "facts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          last_seen_date: string | null
+          longest_streak: number
+          streak_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          last_seen_date?: string | null
+          longest_streak?: number
+          streak_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_seen_date?: string | null
+          longest_streak?: number
+          streak_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

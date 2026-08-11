@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ArchiveRouteImport } from './routes/archive'
+import { Route as FactSlugRouteImport } from './routes/fact.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const ArchiveRoute = ArchiveRouteImport.update({
   path: '/archive',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FactSlugRoute = FactSlugRouteImport.update({
+  id: '/fact/$slug',
+  path: '/fact/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/fact/$slug': typeof FactSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/fact/$slug': typeof FactSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/fact/$slug': typeof FactSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/archive'
+  fullPaths: '/' | '/archive' | '/fact/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/archive'
-  id: '__root__' | '/' | '/archive'
+  to: '/' | '/archive' | '/fact/$slug'
+  id: '__root__' | '/' | '/archive' | '/fact/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ArchiveRoute: typeof ArchiveRoute
+  FactSlugRoute: typeof FactSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArchiveRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/fact/$slug': {
+      id: '/fact/$slug'
+      path: '/fact/$slug'
+      fullPath: '/fact/$slug'
+      preLoaderRoute: typeof FactSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArchiveRoute: ArchiveRoute,
+  FactSlugRoute: FactSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

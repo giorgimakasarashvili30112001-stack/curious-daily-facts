@@ -14,7 +14,7 @@ export function FactCard({
   initiallySaved = false,
 }: {
   fact: Fact;
-  dateLabel?: string;
+  dateLabel?: string | undefined;
   isSignedIn: boolean;
   initiallySaved?: boolean;
 }) {

@@ -37,7 +37,7 @@ function SavedPage() {
       ) : (
         <ul className="space-y-3">
           {data.map((fact) => (
-            <li key={fact.id}>
+            <li key={fact.slug}>
               <Link
                 to="/fact/$slug"
                 params={{ slug: fact.slug }}

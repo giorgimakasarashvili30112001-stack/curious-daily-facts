@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ArchiveRouteImport } from './routes/archive'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as FactSlugRouteImport } from './routes/fact.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const ArchiveRoute = ArchiveRouteImport.update({
   path: '/archive',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FactSlugRoute = FactSlugRouteImport.update({
   id: '/fact/$slug',
   path: '/fact/$slug',
@@ -32,30 +38,34 @@ const FactSlugRoute = FactSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/auth': typeof AuthRoute
   '/fact/$slug': typeof FactSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/auth': typeof AuthRoute
   '/fact/$slug': typeof FactSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/auth': typeof AuthRoute
   '/fact/$slug': typeof FactSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/archive' | '/fact/$slug'
+  fullPaths: '/' | '/archive' | '/auth' | '/fact/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/archive' | '/fact/$slug'
-  id: '__root__' | '/' | '/archive' | '/fact/$slug'
+  to: '/' | '/archive' | '/auth' | '/fact/$slug'
+  id: '__root__' | '/' | '/archive' | '/auth' | '/fact/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ArchiveRoute: typeof ArchiveRoute
+  AuthRoute: typeof AuthRoute
   FactSlugRoute: typeof FactSlugRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArchiveRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/fact/$slug': {
       id: '/fact/$slug'
       path: '/fact/$slug'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArchiveRoute: ArchiveRoute,
+  AuthRoute: AuthRoute,
   FactSlugRoute: FactSlugRoute,
 }
 export const routeTree = rootRouteImport

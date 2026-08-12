@@ -138,6 +138,85 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_attempts: {
+        Row: {
+          created_at: string
+          fact_id: string
+          id: string
+          is_correct: boolean
+          quiz_date: string
+          selected_index: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fact_id: string
+          id?: string
+          is_correct: boolean
+          quiz_date: string
+          selected_index: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fact_id?: string
+          id?: string
+          is_correct?: boolean
+          quiz_date?: string
+          selected_index?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_fact_id_fkey"
+            columns: ["fact_id"]
+            isOneToOne: false
+            referencedRelation: "facts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          correct_index: number
+          created_at: string
+          explanation: string
+          fact_id: string
+          id: string
+          options: Json
+          prompt: string
+          updated_at: string
+        }
+        Insert: {
+          correct_index: number
+          created_at?: string
+          explanation: string
+          fact_id: string
+          id?: string
+          options?: Json
+          prompt: string
+          updated_at?: string
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          explanation?: string
+          fact_id?: string
+          id?: string
+          options?: Json
+          prompt?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_fact_id_fkey"
+            columns: ["fact_id"]
+            isOneToOne: true
+            referencedRelation: "facts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

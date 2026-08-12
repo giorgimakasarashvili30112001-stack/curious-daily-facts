@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { getProfile, updateDisplayName } from "@/lib/user.functions";
+import { getQuizStats } from "@/lib/quiz.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 
 function ProfilePage() {
   const fetchProfile = useServerFn(getProfile);
+  const fetchQuizStats = useServerFn(getQuizStats);
   const saveName = useServerFn(updateDisplayName);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -29,6 +31,7 @@ function ProfilePage() {
   const [busy, setBusy] = useState(false);
 
   const { data } = useQuery({ queryKey: ["profile"], queryFn: () => fetchProfile({}) });
+  const quizStats = useQuery({ queryKey: ["quiz-stats"], queryFn: () => fetchQuizStats({}) });
 
   useEffect(() => {
     if (data?.displayName) setName(data.displayName);
@@ -69,6 +72,27 @@ function ProfilePage() {
         <p className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
           Longest streak: <span className="text-foreground">{data?.longestStreak ?? 0}</span>
         </p>
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="rounded-3xl border border-border bg-card p-5 text-center">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Questions answered
+          </p>
+          <p className="mt-2 text-display text-3xl text-foreground">
+            {quizStats.data?.answered ?? 0}
+          </p>
+        </div>
+        <div className="rounded-3xl border border-border bg-card p-5 text-center">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Correct rate
+          </p>
+          <p className="mt-2 text-display text-3xl text-primary">
+            {quizStats.data && quizStats.data.answered > 0
+              ? `${Math.round((quizStats.data.correct / quizStats.data.answered) * 100)}%`
+              : "—"}
+          </p>
+        </div>
       </div>
 
       <div className="mt-5 rounded-3xl border border-border bg-card p-6">

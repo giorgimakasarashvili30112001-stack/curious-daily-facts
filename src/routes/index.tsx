@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { FactCard } from "@/components/FactCard";
+import { DailyQuizCard } from "@/components/DailyQuizCard";
 import { getTodayFact } from "@/lib/facts.functions";
 import { isFactSaved, touchStreak } from "@/lib/user.functions";
 import { useSession } from "@/hooks/useSession";
@@ -66,6 +67,8 @@ function TodayPage() {
   return (
     <AppShell>
       <AppHeader eyebrow="Today's explainer" streak={streak.data?.streak ?? null} />
+
+      <DailyQuizCard isSignedIn={!!user} />
 
       {data.fact ? (
         <FactCard

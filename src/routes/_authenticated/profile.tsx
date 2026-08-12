@@ -29,6 +29,7 @@ function ProfilePage() {
   const [busy, setBusy] = useState(false);
 
   const { data } = useQuery({ queryKey: ["profile"], queryFn: () => fetchProfile({}) });
+  const quizStats = useQuery({ queryKey: ["quiz-stats"], queryFn: () => fetchQuizStats({}) });
 
   useEffect(() => {
     if (data?.displayName) setName(data.displayName);

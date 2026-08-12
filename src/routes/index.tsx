@@ -67,6 +67,8 @@ function TodayPage() {
     <AppShell>
       <AppHeader eyebrow="Today's explainer" streak={streak.data?.streak ?? null} />
 
+      <DailyQuizCard isSignedIn={!!user} />
+
       {data.fact ? (
         <FactCard
           key={data.fact.id}

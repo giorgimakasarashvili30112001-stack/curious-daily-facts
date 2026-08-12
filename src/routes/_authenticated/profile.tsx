@@ -74,6 +74,27 @@ function ProfilePage() {
         </p>
       </div>
 
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="rounded-3xl border border-border bg-card p-5 text-center">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Questions answered
+          </p>
+          <p className="mt-2 text-display text-3xl text-foreground">
+            {quizStats.data?.answered ?? 0}
+          </p>
+        </div>
+        <div className="rounded-3xl border border-border bg-card p-5 text-center">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Correct rate
+          </p>
+          <p className="mt-2 text-display text-3xl text-primary">
+            {quizStats.data && quizStats.data.answered > 0
+              ? `${Math.round((quizStats.data.correct / quizStats.data.answered) * 100)}%`
+              : "—"}
+          </p>
+        </div>
+      </div>
+
       <div className="mt-5 rounded-3xl border border-border bg-card p-6">
         <label htmlFor="displayName" className="text-xs text-muted-foreground">
           Display name

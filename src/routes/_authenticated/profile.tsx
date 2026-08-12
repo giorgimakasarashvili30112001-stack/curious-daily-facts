@@ -23,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 
 function ProfilePage() {
   const fetchProfile = useServerFn(getProfile);
+  const fetchQuizStats = useServerFn(getQuizStats);
   const saveName = useServerFn(updateDisplayName);
   const queryClient = useQueryClient();
   const navigate = useNavigate();

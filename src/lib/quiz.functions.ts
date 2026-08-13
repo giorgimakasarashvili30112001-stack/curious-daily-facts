@@ -17,7 +17,11 @@ export type QuizResult = {
   correctIndex: number;
   isCorrect: boolean;
   explanation: string;
+  quizStreak?: number;
+  longestQuizStreak?: number;
+  streakExtended?: boolean;
 };
+
 
 const answerInput = (input: unknown) =>
   z.object({ factId: z.string().uuid(), selectedIndex: z.number().int().min(0).max(3) }).parse(input);

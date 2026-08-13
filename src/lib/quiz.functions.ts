@@ -20,7 +20,12 @@ export type QuizResult = {
   quizStreak?: number;
   longestQuizStreak?: number;
   streakExtended?: boolean;
+  coins?: number;
+  coinsEarned?: number;
+  streakSaved?: boolean;
 };
+
+export const STREAK_SAVE_COST = 30;
 
 
 const answerInput = (input: unknown) =>

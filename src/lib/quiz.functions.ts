@@ -95,12 +95,13 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
 
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("quiz_streak, longest_quiz_streak, last_correct_quiz_date")
+      .select("quiz_streak, longest_quiz_streak, last_correct_quiz_date, coins")
       .eq("id", context.userId)
       .maybeSingle();
 
     let quizStreak = profile?.quiz_streak ?? 0;
     let longestQuizStreak = profile?.longest_quiz_streak ?? 0;
+    let coins = profile?.coins ?? 0;
 
     if (error) {
       const { data: existing } = await context.supabase
@@ -116,16 +117,37 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
           explanation: question.explanation,
           quizStreak,
           longestQuizStreak,
+          coins,
         };
       }
     }
 
     let streakExtended = false;
+    let streakSaved = false;
+    let coinsEarned = 0;
+
     if (isCorrect && profile?.last_correct_quiz_date !== quizDate) {
-      const yesterday = new Date(`${quizDate}T00:00:00Z`);
-      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-      const continued = profile?.last_correct_quiz_date === yesterday.toISOString().slice(0, 10);
-      quizStreak = continued ? quizStreak + 1 : 1;
+      const dayBefore = (offset: number) => {
+        const d = new Date(`${quizDate}T00:00:00Z`);
+        d.setUTCDate(d.getUTCDate() - offset);
+        return d.toISOString().slice(0, 10);
+      };
+      const last = profile?.last_correct_quiz_date ?? null;
+
+      coinsEarned = 1;
+      coins += 1;
+
+      if (last === dayBefore(1)) {
+        quizStreak = quizStreak + 1;
+      } else if (last === dayBefore(2) && quizStreak > 0 && coins >= STREAK_SAVE_COST) {
+        // One missed day — automatically repaired with coins.
+        coins -= STREAK_SAVE_COST;
+        quizStreak = quizStreak + 1;
+        streakSaved = true;
+      } else {
+        quizStreak = 1;
+      }
+
       longestQuizStreak = Math.max(longestQuizStreak, quizStreak);
       streakExtended = true;
 
@@ -135,6 +157,7 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
           quiz_streak: quizStreak,
           longest_quiz_streak: longestQuizStreak,
           last_correct_quiz_date: quizDate,
+          coins,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "id" },
@@ -155,7 +178,11 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       quizStreak,
       longestQuizStreak,
       streakExtended,
+      coins,
+      coinsEarned,
+      streakSaved,
     };
+
 
   });
 

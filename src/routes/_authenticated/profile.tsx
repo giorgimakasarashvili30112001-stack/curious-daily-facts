@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Flame } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
@@ -74,6 +75,23 @@ function ProfilePage() {
         </p>
       </div>
 
+      <div className="mt-5 rounded-3xl border border-border bg-card p-6 text-center">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+          Quiz streak
+        </p>
+        <p className="mt-2 flex items-center justify-center gap-2 text-display text-4xl text-primary">
+          <Flame className="h-7 w-7" aria-hidden="true" />
+          {quizStats.data?.quizStreak ?? 0}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          correct answers in a row
+        </p>
+        <p className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
+          Best quiz streak:{" "}
+          <span className="text-foreground">{quizStats.data?.longestQuizStreak ?? 0}</span>
+        </p>
+      </div>
+
       <div className="mt-5 grid grid-cols-2 gap-3">
         <div className="rounded-3xl border border-border bg-card p-5 text-center">
           <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -94,6 +112,7 @@ function ProfilePage() {
           </p>
         </div>
       </div>
+
 
       <div className="mt-5 rounded-3xl border border-border bg-card p-6">
         <label htmlFor="displayName" className="text-xs text-muted-foreground">

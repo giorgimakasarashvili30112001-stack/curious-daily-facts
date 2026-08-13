@@ -88,6 +88,15 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
     // A duplicate means they already answered today; keep the stored attempt.
     if (error && error.code !== "23505") throw error;
 
+    const { data: profile } = await context.supabase
+      .from("profiles")
+      .select("quiz_streak, longest_quiz_streak, last_correct_quiz_date")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    let quizStreak = profile?.quiz_streak ?? 0;
+    let longestQuizStreak = profile?.longest_quiz_streak ?? 0;
+
     if (error) {
       const { data: existing } = await context.supabase
         .from("quiz_attempts")
@@ -100,8 +109,37 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
           correctIndex: question.correct_index,
           isCorrect: existing.is_correct,
           explanation: question.explanation,
+          quizStreak,
+          longestQuizStreak,
         };
       }
+    }
+
+    let streakExtended = false;
+    if (isCorrect && profile?.last_correct_quiz_date !== quizDate) {
+      const yesterday = new Date(`${quizDate}T00:00:00Z`);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      const continued = profile?.last_correct_quiz_date === yesterday.toISOString().slice(0, 10);
+      quizStreak = continued ? quizStreak + 1 : 1;
+      longestQuizStreak = Math.max(longestQuizStreak, quizStreak);
+      streakExtended = true;
+
+      await context.supabase.from("profiles").upsert(
+        {
+          id: context.userId,
+          quiz_streak: quizStreak,
+          longest_quiz_streak: longestQuizStreak,
+          last_correct_quiz_date: quizDate,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" },
+      );
+    } else if (!isCorrect && quizStreak > 0) {
+      quizStreak = 0;
+      await context.supabase
+        .from("profiles")
+        .update({ quiz_streak: 0, updated_at: new Date().toISOString() })
+        .eq("id", context.userId);
     }
 
     return {
@@ -109,7 +147,11 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       correctIndex: question.correct_index,
       isCorrect,
       explanation: question.explanation,
+      quizStreak,
+      longestQuizStreak,
+      streakExtended,
     };
+
   });
 
 /** Today's recorded attempt, if the user already answered. */

@@ -172,19 +172,49 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
     const question = await loadQuestion(data.factId);
     if (!question) return null;
 
+    const { data: profile } = await context.supabase
+      .from("profiles")
+      .select("quiz_streak, longest_quiz_streak")
+      .eq("id", context.userId)
+      .maybeSingle();
+
     return {
       selectedIndex: attempt.selected_index,
       correctIndex: question.correct_index,
       isCorrect: attempt.is_correct,
       explanation: question.explanation,
+      quizStreak: profile?.quiz_streak ?? 0,
+      longestQuizStreak: profile?.longest_quiz_streak ?? 0,
     };
   });
 
 /** Lifetime quiz stats for the signed-in user. */
 export const getQuizStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ answered: number; correct: number }> => {
-    const { data } = await context.supabase.from("quiz_attempts").select("is_correct");
-    const rows = data ?? [];
-    return { answered: rows.length, correct: rows.filter((r) => r.is_correct).length };
-  });
+  .handler(
+    async ({
+      context,
+    }): Promise<{
+      answered: number;
+      correct: number;
+      quizStreak: number;
+      longestQuizStreak: number;
+    }> => {
+      const [{ data }, { data: profile }] = await Promise.all([
+        context.supabase.from("quiz_attempts").select("is_correct"),
+        context.supabase
+          .from("profiles")
+          .select("quiz_streak, longest_quiz_streak")
+          .eq("id", context.userId)
+          .maybeSingle(),
+      ]);
+      const rows = data ?? [];
+      return {
+        answered: rows.length,
+        correct: rows.filter((r) => r.is_correct).length,
+        quizStreak: profile?.quiz_streak ?? 0,
+        longestQuizStreak: profile?.longest_quiz_streak ?? 0,
+      };
+    },
+  );
+

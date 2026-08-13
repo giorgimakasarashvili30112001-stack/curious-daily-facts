@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Flame, X } from "lucide-react";
+import { Check, Coins, Flame, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   gradeQuizAnswer,

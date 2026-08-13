@@ -9,6 +9,7 @@ import {
   getDailyQuiz,
   getQuizAttempt,
   submitQuizAnswer,
+  STREAK_SAVE_COST,
   type QuizResult,
 } from "@/lib/quiz.functions";
 

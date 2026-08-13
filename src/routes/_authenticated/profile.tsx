@@ -2,12 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Flame } from "lucide-react";
+import { Coins, Flame } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { getProfile, updateDisplayName } from "@/lib/user.functions";
 import { getQuizStats } from "@/lib/quiz.functions";
+import { STREAK_SAVE_COST } from "@/lib/quiz.constants";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -91,6 +92,20 @@ function ProfilePage() {
           <span className="text-foreground">{quizStats.data?.longestQuizStreak ?? 0}</span>
         </p>
       </div>
+
+      <div className="mt-5 rounded-3xl border border-border bg-card p-6 text-center">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Coins</p>
+        <p className="mt-2 flex items-center justify-center gap-2 text-display text-4xl text-primary">
+          <Coins className="h-7 w-7" aria-hidden="true" />
+          {quizStats.data?.coins ?? 0}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">1 coin per correct answer</p>
+        <p className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
+          Miss a day? {STREAK_SAVE_COST} coins are spent automatically to keep your quiz streak
+          alive.
+        </p>
+      </div>
+
 
       <div className="mt-5 grid grid-cols-2 gap-3">
         <div className="rounded-3xl border border-border bg-card p-5 text-center">

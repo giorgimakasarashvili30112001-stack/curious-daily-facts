@@ -110,6 +110,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          coins: number
           created_at: string
           display_name: string | null
           id: string
@@ -122,6 +123,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          coins?: number
           created_at?: string
           display_name?: string | null
           id: string
@@ -134,6 +136,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          coins?: number
           created_at?: string
           display_name?: string | null
           id?: string

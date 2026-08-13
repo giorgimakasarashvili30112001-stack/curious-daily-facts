@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Flame, X } from "lucide-react";
+import { Check, Coins, Flame, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   gradeQuizAnswer,
@@ -11,6 +11,7 @@ import {
   submitQuizAnswer,
   type QuizResult,
 } from "@/lib/quiz.functions";
+import { STREAK_SAVE_COST } from "@/lib/quiz.constants";
 
 const storageKey = (date: string) => `daily-quiz-${date}`;
 
@@ -119,6 +120,22 @@ export function DailyQuizCard({ isSignedIn }: { isSignedIn: boolean }) {
                 {result.quizStreak > 0
                   ? `${result.quizStreak}-day quiz streak${result.streakExtended ? " — kept alive!" : ""}`
                   : "Quiz streak reset — back tomorrow"}
+              </p>
+            ) : null}
+            {isSignedIn && result.streakSaved ? (
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                You missed a day — {STREAK_SAVE_COST} coins were spent to save your streak.
+              </p>
+            ) : null}
+            {isSignedIn && typeof result.coins === "number" ? (
+              <p className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+                <Coins className="h-4 w-4 text-primary" aria-hidden="true" />
+                {result.coins} coins
+                {result.coinsEarned ? (
+                  <span className="font-normal text-muted-foreground">
+                    (+{result.coinsEarned} earned)
+                  </span>
+                ) : null}
               </p>
             ) : null}
             <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">

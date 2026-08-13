@@ -68,8 +68,6 @@ function TodayPage() {
     <AppShell>
       <AppHeader eyebrow="Today's explainer" streak={streak.data?.streak ?? null} />
 
-      <DailyQuizCard isSignedIn={!!user} />
-
       {data.fact ? (
         <FactCard
           key={data.fact.id}
@@ -80,9 +78,11 @@ function TodayPage() {
         />
       ) : (
         <p className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground">
-          Today&apos;s explainer is still being prepared. Check back in a moment.
+          Today's explainer is still being prepared. Check back in a moment.
         </p>
       )}
+
+      <DailyQuizCard isSignedIn={!!user} />
 
       {!user ? (
         <div className="mt-6 rounded-2xl border border-border bg-card p-5 text-center">

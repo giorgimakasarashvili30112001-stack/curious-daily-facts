@@ -17,7 +17,11 @@ export type QuizResult = {
   correctIndex: number;
   isCorrect: boolean;
   explanation: string;
+  quizStreak?: number;
+  longestQuizStreak?: number;
+  streakExtended?: boolean;
 };
+
 
 const answerInput = (input: unknown) =>
   z.object({ factId: z.string().uuid(), selectedIndex: z.number().int().min(0).max(3) }).parse(input);
@@ -84,6 +88,15 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
     // A duplicate means they already answered today; keep the stored attempt.
     if (error && error.code !== "23505") throw error;
 
+    const { data: profile } = await context.supabase
+      .from("profiles")
+      .select("quiz_streak, longest_quiz_streak, last_correct_quiz_date")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    let quizStreak = profile?.quiz_streak ?? 0;
+    let longestQuizStreak = profile?.longest_quiz_streak ?? 0;
+
     if (error) {
       const { data: existing } = await context.supabase
         .from("quiz_attempts")
@@ -96,8 +109,37 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
           correctIndex: question.correct_index,
           isCorrect: existing.is_correct,
           explanation: question.explanation,
+          quizStreak,
+          longestQuizStreak,
         };
       }
+    }
+
+    let streakExtended = false;
+    if (isCorrect && profile?.last_correct_quiz_date !== quizDate) {
+      const yesterday = new Date(`${quizDate}T00:00:00Z`);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      const continued = profile?.last_correct_quiz_date === yesterday.toISOString().slice(0, 10);
+      quizStreak = continued ? quizStreak + 1 : 1;
+      longestQuizStreak = Math.max(longestQuizStreak, quizStreak);
+      streakExtended = true;
+
+      await context.supabase.from("profiles").upsert(
+        {
+          id: context.userId,
+          quiz_streak: quizStreak,
+          longest_quiz_streak: longestQuizStreak,
+          last_correct_quiz_date: quizDate,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" },
+      );
+    } else if (!isCorrect && quizStreak > 0) {
+      quizStreak = 0;
+      await context.supabase
+        .from("profiles")
+        .update({ quiz_streak: 0, updated_at: new Date().toISOString() })
+        .eq("id", context.userId);
     }
 
     return {
@@ -105,7 +147,11 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       correctIndex: question.correct_index,
       isCorrect,
       explanation: question.explanation,
+      quizStreak,
+      longestQuizStreak,
+      streakExtended,
     };
+
   });
 
 /** Today's recorded attempt, if the user already answered. */
@@ -126,19 +172,49 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
     const question = await loadQuestion(data.factId);
     if (!question) return null;
 
+    const { data: profile } = await context.supabase
+      .from("profiles")
+      .select("quiz_streak, longest_quiz_streak")
+      .eq("id", context.userId)
+      .maybeSingle();
+
     return {
       selectedIndex: attempt.selected_index,
       correctIndex: question.correct_index,
       isCorrect: attempt.is_correct,
       explanation: question.explanation,
+      quizStreak: profile?.quiz_streak ?? 0,
+      longestQuizStreak: profile?.longest_quiz_streak ?? 0,
     };
   });
 
 /** Lifetime quiz stats for the signed-in user. */
 export const getQuizStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ answered: number; correct: number }> => {
-    const { data } = await context.supabase.from("quiz_attempts").select("is_correct");
-    const rows = data ?? [];
-    return { answered: rows.length, correct: rows.filter((r) => r.is_correct).length };
-  });
+  .handler(
+    async ({
+      context,
+    }): Promise<{
+      answered: number;
+      correct: number;
+      quizStreak: number;
+      longestQuizStreak: number;
+    }> => {
+      const [{ data }, { data: profile }] = await Promise.all([
+        context.supabase.from("quiz_attempts").select("is_correct"),
+        context.supabase
+          .from("profiles")
+          .select("quiz_streak, longest_quiz_streak")
+          .eq("id", context.userId)
+          .maybeSingle(),
+      ]);
+      const rows = data ?? [];
+      return {
+        answered: rows.length,
+        correct: rows.filter((r) => r.is_correct).length,
+        quizStreak: profile?.quiz_streak ?? 0,
+        longestQuizStreak: profile?.longest_quiz_streak ?? 0,
+      };
+    },
+  );
+

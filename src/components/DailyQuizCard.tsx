@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, X } from "lucide-react";
+import { Check, Flame, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   gradeQuizAnswer,
@@ -113,9 +113,18 @@ export function DailyQuizCard({ isSignedIn }: { isSignedIn: boolean }) {
             <p className="text-[13px] font-semibold text-foreground">
               {result.isCorrect ? "Correct" : "Not quite"}
             </p>
+            {isSignedIn && typeof result.quizStreak === "number" ? (
+              <p className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-primary">
+                <Flame className="h-4 w-4" aria-hidden="true" />
+                {result.quizStreak > 0
+                  ? `${result.quizStreak}-day quiz streak${result.streakExtended ? " — kept alive!" : ""}`
+                  : "Quiz streak reset — back tomorrow"}
+              </p>
+            ) : null}
             <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
               {result.explanation}
             </p>
+
             <Link
               to="/fact/$slug"
               params={{ slug: quiz.factSlug }}

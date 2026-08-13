@@ -206,7 +206,7 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
 
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("quiz_streak, longest_quiz_streak")
+      .select("quiz_streak, longest_quiz_streak, coins")
       .eq("id", context.userId)
       .maybeSingle();
 
@@ -217,6 +217,7 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
       explanation: question.explanation,
       quizStreak: profile?.quiz_streak ?? 0,
       longestQuizStreak: profile?.longest_quiz_streak ?? 0,
+      coins: profile?.coins ?? 0,
     };
   });
 

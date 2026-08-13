@@ -232,12 +232,13 @@ export const getQuizStats = createServerFn({ method: "GET" })
       correct: number;
       quizStreak: number;
       longestQuizStreak: number;
+      coins: number;
     }> => {
       const [{ data }, { data: profile }] = await Promise.all([
         context.supabase.from("quiz_attempts").select("is_correct"),
         context.supabase
           .from("profiles")
-          .select("quiz_streak, longest_quiz_streak")
+          .select("quiz_streak, longest_quiz_streak, coins")
           .eq("id", context.userId)
           .maybeSingle(),
       ]);
@@ -247,6 +248,7 @@ export const getQuizStats = createServerFn({ method: "GET" })
         correct: rows.filter((r) => r.is_correct).length,
         quizStreak: profile?.quiz_streak ?? 0,
         longestQuizStreak: profile?.longest_quiz_streak ?? 0,
+        coins: profile?.coins ?? 0,
       };
     },
   );

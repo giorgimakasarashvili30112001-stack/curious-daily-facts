@@ -7,7 +7,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { getProfile, updateDisplayName } from "@/lib/user.functions";
-import { getQuizStats } from "@/lib/quiz.functions";
+import { getQuizStats, STREAK_SAVE_COST } from "@/lib/quiz.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/profile")({

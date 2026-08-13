@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { STREAK_SAVE_COST } from "./quiz.constants";
 
 export type DailyQuiz = {
   quizDate: string;
@@ -25,7 +26,6 @@ export type QuizResult = {
   streakSaved?: boolean;
 };
 
-export const STREAK_SAVE_COST = 30;
 
 
 const answerInput = (input: unknown) =>

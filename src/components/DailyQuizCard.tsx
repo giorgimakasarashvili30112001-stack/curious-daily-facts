@@ -9,9 +9,9 @@ import {
   getDailyQuiz,
   getQuizAttempt,
   submitQuizAnswer,
-  STREAK_SAVE_COST,
   type QuizResult,
 } from "@/lib/quiz.functions";
+import { STREAK_SAVE_COST } from "@/lib/quiz.constants";
 
 const storageKey = (date: string) => `daily-quiz-${date}`;
 

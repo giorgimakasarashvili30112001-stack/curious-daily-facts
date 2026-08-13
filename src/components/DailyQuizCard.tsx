@@ -121,6 +121,22 @@ export function DailyQuizCard({ isSignedIn }: { isSignedIn: boolean }) {
                   : "Quiz streak reset — back tomorrow"}
               </p>
             ) : null}
+            {isSignedIn && result.streakSaved ? (
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                You missed a day — {STREAK_SAVE_COST} coins were spent to save your streak.
+              </p>
+            ) : null}
+            {isSignedIn && typeof result.coins === "number" ? (
+              <p className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+                <Coins className="h-4 w-4 text-primary" aria-hidden="true" />
+                {result.coins} coins
+                {result.coinsEarned ? (
+                  <span className="font-normal text-muted-foreground">
+                    (+{result.coinsEarned} earned)
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
             <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
               {result.explanation}
             </p>

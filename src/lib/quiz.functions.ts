@@ -18,8 +18,8 @@ export type QuizResult = {
   correctIndex: number;
   isCorrect: boolean;
   explanation: string;
-  quizStreak?: number;
-  longestQuizStreak?: number;
+  streak?: number;
+  longestStreak?: number;
   streakExtended?: boolean;
   coins?: number;
   coinsEarned?: number;

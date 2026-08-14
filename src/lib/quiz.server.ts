@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type QuizQuestionRow = {
   fact_id: string;
+  question_index: number;
   prompt: string;
   options: string[];
   correct_index: number;
@@ -20,22 +21,37 @@ export function quizFactDate(today: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function loadQuestion(factId: string): Promise<QuizQuestionRow | null> {
+export async function loadQuestion(
+  factId: string,
+  questionIndex = 0,
+): Promise<QuizQuestionRow | null> {
   const { data } = await supabaseAdmin
     .from("quiz_questions")
-    .select("fact_id, prompt, options, correct_index, explanation")
+    .select("fact_id, question_index, prompt, options, correct_index, explanation")
     .eq("fact_id", factId)
+    .eq("question_index", questionIndex)
     .maybeSingle();
   if (!data) return null;
   const options = normalizeOptions(data.options);
   if (options.length !== 4) return null;
   return {
     fact_id: data.fact_id,
+    question_index: data.question_index,
     prompt: data.prompt,
     options,
     correct_index: data.correct_index,
     explanation: data.explanation,
   };
+}
+
+async function previousPrompts(factId: string, questionIndex: number): Promise<string[]> {
+  if (questionIndex <= 0) return [];
+  const { data } = await supabaseAdmin
+    .from("quiz_questions")
+    .select("prompt")
+    .eq("fact_id", factId)
+    .lt("question_index", questionIndex);
+  return (data ?? []).map((r) => r.prompt);
 }
 
 type GeneratedQuiz = {
@@ -53,12 +69,24 @@ type FactLike = {
   surprising_detail: string;
 };
 
-/** Generates and stores the single quiz question for a fact. */
-export async function generateQuestion(fact: FactLike): Promise<QuizQuestionRow | null> {
+/**
+ * Generates and stores the quiz question at `questionIndex` for a fact.
+ * Concurrency-safe: the unique (fact_id, question_index) index means only one
+ * parallel generation wins, and every caller re-reads the stored winner so all
+ * users always see the exact same question.
+ */
+export async function generateQuestion(
+  fact: FactLike,
+  questionIndex = 0,
+): Promise<QuizQuestionRow | null> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
 
   const stepText = fact.steps.map((s) => `${s.heading}: ${s.body}`).join("\n");
+  const asked = await previousPrompts(fact.id, questionIndex);
+  const avoid = asked.length
+    ? `\n\nThese questions were already asked about this explainer — write a clearly different one, in the same style, testing another part of the mechanism:\n${asked.map((p) => `- ${p}`).join("\n")}`
+    : "";
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -74,7 +102,7 @@ export async function generateQuestion(fact: FactLike): Promise<QuizQuestionRow 
         },
         {
           role: "user",
-          content: `Explainer title: ${fact.title}\nIntro: ${fact.intro}\nSteps:\n${stepText}\nSurprising detail: ${fact.surprising_detail}\n\nWrite one question with exactly 4 short options (under 80 characters each), one clearly correct, three plausible but wrong. correct_index is the 0-based index of the correct option. explanation is one sentence saying why it's right.`,
+          content: `Explainer title: ${fact.title}\nIntro: ${fact.intro}\nSteps:\n${stepText}\nSurprising detail: ${fact.surprising_detail}\n\nWrite one question with exactly 4 short options (under 80 characters each), one clearly correct, three plausible but wrong. correct_index is the 0-based index of the correct option. explanation is one sentence saying why it's right.${avoid}`,
         },
       ],
       response_format: {
@@ -100,18 +128,18 @@ export async function generateQuestion(fact: FactLike): Promise<QuizQuestionRow 
 
   if (!response.ok) {
     console.error("quiz generation failed", response.status, await response.text());
-    return null;
+    return loadQuestion(fact.id, questionIndex);
   }
 
   const payload = (await response.json()) as { choices?: { message?: { content?: string } }[] };
   const content = payload.choices?.[0]?.message?.content;
-  if (!content) return null;
+  if (!content) return loadQuestion(fact.id, questionIndex);
 
   let parsed: GeneratedQuiz;
   try {
     parsed = JSON.parse(content) as GeneratedQuiz;
   } catch {
-    return null;
+    return loadQuestion(fact.id, questionIndex);
   }
 
   const options = normalizeOptions(parsed.options);
@@ -124,29 +152,28 @@ export async function generateQuestion(fact: FactLike): Promise<QuizQuestionRow 
     !parsed.prompt ||
     !parsed.explanation
   ) {
-    return null;
+    return loadQuestion(fact.id, questionIndex);
   }
 
   const row: QuizQuestionRow = {
     fact_id: fact.id,
+    question_index: questionIndex,
     prompt: parsed.prompt.trim(),
     options,
     correct_index: index,
     explanation: parsed.explanation.trim(),
   };
 
-  const { error } = await supabaseAdmin
+  // Ignore duplicates: a parallel request may have already stored this slot.
+  await supabaseAdmin
     .from("quiz_questions")
-    .upsert(row, { onConflict: "fact_id" });
-  if (error) throw error;
+    .upsert(row, { onConflict: "fact_id,question_index", ignoreDuplicates: true });
 
-  return row;
+  // Always return the persisted row so every user gets the identical question.
+  return loadQuestion(fact.id, questionIndex);
 }
 
-/** Question for yesterday's featured fact, generating it once if needed. */
-export async function getQuestionForDate(
-  factDate: string,
-): Promise<{ question: QuizQuestionRow; fact: { id: string; slug: string; title: string } } | null> {
+async function loadFact(factDate: string): Promise<{ fact: FactLike; slug: string } | null> {
   const { data: pick } = await supabaseAdmin
     .from("daily_picks")
     .select("fact_id, facts:fact_id (id, slug, title, intro, steps, surprising_detail)")
@@ -156,21 +183,67 @@ export async function getQuestionForDate(
   const raw = pick?.facts as Record<string, unknown> | null | undefined;
   if (!raw) return null;
 
+  return {
+    slug: String(raw["slug"]),
+    fact: {
+      id: String(raw["id"]),
+      title: String(raw["title"]),
+      intro: String(raw["intro"]),
+      steps: Array.isArray(raw["steps"])
+        ? (raw["steps"] as Record<string, unknown>[]).map((s) => ({
+            heading: String(s?.["heading"] ?? ""),
+            body: String(s?.["body"] ?? ""),
+          }))
+        : [],
+      surprising_detail: String(raw["surprising_detail"]),
+    },
+  };
+}
+
+/** Question for yesterday's featured fact at a given index, generating it once if needed. */
+export async function getQuestionForDate(
+  factDate: string,
+  questionIndex = 0,
+): Promise<{ question: QuizQuestionRow; fact: { id: string; slug: string; title: string } } | null> {
+  const loaded = await loadFact(factDate);
+  if (!loaded) return null;
+  const { fact, slug } = loaded;
+
+  const question =
+    (await loadQuestion(fact.id, questionIndex)) ??
+    (await generateQuestion(fact, questionIndex));
+  if (!question) return null;
+
+  return { question, fact: { id: fact.id, slug, title: fact.title } };
+}
+
+/** Question for a fact by id at a given index, generating it once if needed. */
+export async function getQuestionForFact(
+  factId: string,
+  questionIndex: number,
+): Promise<QuizQuestionRow | null> {
+  const existing = await loadQuestion(factId, questionIndex);
+  if (existing) return existing;
+
+  const { data: raw } = await supabaseAdmin
+    .from("facts")
+    .select("id, title, intro, steps, surprising_detail")
+    .eq("id", factId)
+    .maybeSingle();
+  if (!raw) return null;
+
   const fact: FactLike = {
-    id: String(raw["id"]),
-    title: String(raw["title"]),
-    intro: String(raw["intro"]),
-    steps: Array.isArray(raw["steps"])
-      ? (raw["steps"] as Record<string, unknown>[]).map((s) => ({
+    id: raw.id,
+    title: raw.title,
+    intro: raw.intro,
+    steps: Array.isArray(raw.steps)
+      ? (raw.steps as Record<string, unknown>[]).map((s) => ({
           heading: String(s?.["heading"] ?? ""),
           body: String(s?.["body"] ?? ""),
         }))
       : [],
-    surprising_detail: String(raw["surprising_detail"]),
+    surprising_detail: raw.surprising_detail,
   };
 
-  const question = (await loadQuestion(fact.id)) ?? (await generateQuestion(fact));
-  if (!question) return null;
-
-  return { question, fact: { id: fact.id, slug: String(raw["slug"]), title: fact.title } };
+  return generateQuestion(fact, questionIndex);
 }

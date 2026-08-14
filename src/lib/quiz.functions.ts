@@ -206,7 +206,7 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
 
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("quiz_streak, longest_quiz_streak, coins")
+      .select("streak_count, longest_streak, coins")
       .eq("id", context.userId)
       .maybeSingle();
 
@@ -215,8 +215,8 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
       correctIndex: question.correct_index,
       isCorrect: attempt.is_correct,
       explanation: question.explanation,
-      quizStreak: profile?.quiz_streak ?? 0,
-      longestQuizStreak: profile?.longest_quiz_streak ?? 0,
+      streak: profile?.streak_count ?? 0,
+      longestStreak: profile?.longest_streak ?? 0,
       coins: profile?.coins ?? 0,
     };
   });
@@ -230,15 +230,15 @@ export const getQuizStats = createServerFn({ method: "GET" })
     }): Promise<{
       answered: number;
       correct: number;
-      quizStreak: number;
-      longestQuizStreak: number;
+      streak: number;
+      longestStreak: number;
       coins: number;
     }> => {
       const [{ data }, { data: profile }] = await Promise.all([
         context.supabase.from("quiz_attempts").select("is_correct"),
         context.supabase
           .from("profiles")
-          .select("quiz_streak, longest_quiz_streak, coins")
+          .select("streak_count, longest_streak, coins")
           .eq("id", context.userId)
           .maybeSingle(),
       ]);
@@ -246,8 +246,8 @@ export const getQuizStats = createServerFn({ method: "GET" })
       return {
         answered: rows.length,
         correct: rows.filter((r) => r.is_correct).length,
-        quizStreak: profile?.quiz_streak ?? 0,
-        longestQuizStreak: profile?.longest_quiz_streak ?? 0,
+        streak: profile?.streak_count ?? 0,
+        longestStreak: profile?.longest_streak ?? 0,
         coins: profile?.coins ?? 0,
       };
     },

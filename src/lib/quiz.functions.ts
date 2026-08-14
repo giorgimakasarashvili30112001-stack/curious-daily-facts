@@ -3,17 +3,29 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { STREAK_SAVE_COST } from "./quiz.constants";
 
+/** Hard cap on follow-up questions generated per explainer. */
+export const MAX_QUESTION_INDEX = 9;
+
 export type DailyQuiz = {
   quizDate: string;
   factDate: string;
   factId: string;
   factSlug: string;
   factTitle: string;
+  questionIndex: number;
+  prompt: string;
+  options: string[];
+};
+
+export type QuizQuestion = {
+  factId: string;
+  questionIndex: number;
   prompt: string;
   options: string[];
 };
 
 export type QuizResult = {
+  questionIndex: number;
   selectedIndex: number;
   correctIndex: number;
   isCorrect: boolean;
@@ -26,10 +38,14 @@ export type QuizResult = {
   streakSaved?: boolean;
 };
 
-
-
 const answerInput = (input: unknown) =>
-  z.object({ factId: z.string().uuid(), selectedIndex: z.number().int().min(0).max(3) }).parse(input);
+  z
+    .object({
+      factId: z.string().uuid(),
+      selectedIndex: z.number().int().min(0).max(3),
+      questionIndex: z.number().int().min(0).max(MAX_QUESTION_INDEX).default(0),
+    })
+    .parse(input);
 
 /** Yesterday's explainer turned into one multiple-choice question. Public. */
 export const getDailyQuiz = createServerFn({ method: "GET" }).handler(
@@ -39,7 +55,7 @@ export const getDailyQuiz = createServerFn({ method: "GET" }).handler(
 
     const quizDate = todayUtc();
     const factDate = quizFactDate(quizDate);
-    const result = await getQuestionForDate(factDate);
+    const result = await getQuestionForDate(factDate, 0);
     if (!result) return null;
 
     return {
@@ -48,20 +64,47 @@ export const getDailyQuiz = createServerFn({ method: "GET" }).handler(
       factId: result.fact.id,
       factSlug: result.fact.slug,
       factTitle: result.fact.title,
+      questionIndex: result.question.question_index,
       prompt: result.question.prompt,
       options: result.question.options,
     };
   },
 );
 
+/**
+ * A follow-up question for the same explainer. Shared by everyone: the first
+ * request generates and stores it, parallel requests converge on the same row.
+ */
+export const getQuizQuestion = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        factId: z.string().uuid(),
+        questionIndex: z.number().int().min(0).max(MAX_QUESTION_INDEX),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }): Promise<QuizQuestion | null> => {
+    const { getQuestionForFact } = await import("./quiz.server");
+    const question = await getQuestionForFact(data.factId, data.questionIndex);
+    if (!question) return null;
+    return {
+      factId: question.fact_id,
+      questionIndex: question.question_index,
+      prompt: question.prompt,
+      options: question.options,
+    };
+  });
+
 /** Grades an answer without persisting it (signed-out play). */
 export const gradeQuizAnswer = createServerFn({ method: "POST" })
   .inputValidator(answerInput)
   .handler(async ({ data }): Promise<QuizResult | null> => {
     const { loadQuestion } = await import("./quiz.server");
-    const question = await loadQuestion(data.factId);
+    const question = await loadQuestion(data.factId, data.questionIndex);
     if (!question) return null;
     return {
+      questionIndex: data.questionIndex,
       selectedIndex: data.selectedIndex,
       correctIndex: question.correct_index,
       isCorrect: data.selectedIndex === question.correct_index,
@@ -77,7 +120,7 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
     const { loadQuestion } = await import("./quiz.server");
     const { todayUtc } = await import("./facts.server");
 
-    const question = await loadQuestion(data.factId);
+    const question = await loadQuestion(data.factId, data.questionIndex);
     if (!question) return null;
 
     const isCorrect = data.selectedIndex === question.correct_index;
@@ -87,10 +130,11 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       user_id: context.userId,
       quiz_date: quizDate,
       fact_id: data.factId,
+      question_index: data.questionIndex,
       selected_index: data.selectedIndex,
       is_correct: isCorrect,
     });
-    // A duplicate means they already answered today; keep the stored attempt.
+    // A duplicate means they already answered this question today; keep the stored attempt.
     if (error && error.code !== "23505") throw error;
 
     const { data: profile } = await context.supabase
@@ -108,9 +152,11 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
         .from("quiz_attempts")
         .select("selected_index, is_correct")
         .eq("quiz_date", quizDate)
+        .eq("question_index", data.questionIndex)
         .maybeSingle();
       if (existing) {
         return {
+          questionIndex: data.questionIndex,
           selectedIndex: existing.selected_index,
           correctIndex: question.correct_index,
           isCorrect: existing.is_correct,
@@ -162,15 +208,10 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
         },
         { onConflict: "id" },
       );
-    } else if (!isCorrect && streak > 0) {
-      streak = 0;
-      await context.supabase
-        .from("profiles")
-        .update({ streak_count: 0, updated_at: new Date().toISOString() })
-        .eq("id", context.userId);
     }
 
     return {
+      questionIndex: data.questionIndex,
       selectedIndex: data.selectedIndex,
       correctIndex: question.correct_index,
       isCorrect,
@@ -182,11 +223,9 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       coinsEarned,
       streakSaved,
     };
-
-
   });
 
-/** Today's recorded attempt, if the user already answered. */
+/** The user's latest recorded attempt for today, if any. */
 export const getQuizAttempt = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ factId: z.string().uuid() }).parse(input))
@@ -196,12 +235,15 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
 
     const { data: attempt } = await context.supabase
       .from("quiz_attempts")
-      .select("selected_index, is_correct")
+      .select("selected_index, is_correct, question_index")
       .eq("quiz_date", todayUtc())
+      .eq("fact_id", data.factId)
+      .order("question_index", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (!attempt) return null;
 
-    const question = await loadQuestion(data.factId);
+    const question = await loadQuestion(data.factId, attempt.question_index);
     if (!question) return null;
 
     const { data: profile } = await context.supabase
@@ -211,6 +253,7 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
       .maybeSingle();
 
     return {
+      questionIndex: attempt.question_index,
       selectedIndex: attempt.selected_index,
       correctIndex: question.correct_index,
       isCorrect: attempt.is_correct,
@@ -252,4 +295,3 @@ export const getQuizStats = createServerFn({ method: "GET" })
       };
     },
   );
-

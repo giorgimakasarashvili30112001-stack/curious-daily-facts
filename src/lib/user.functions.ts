@@ -17,63 +17,6 @@ export type SavedFact = {
   savedAt: string;
 };
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-/** Records a visit for the signed-in user and returns the refreshed streak. */
-export const touchStreak = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<ProfileState> => {
-    const { supabase, userId } = context;
-    const now = today();
-
-    const { data: existing } = await supabase
-      .from("profiles")
-      .select("display_name, streak_count, longest_streak, last_seen_date")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (!existing) {
-      await supabase
-        .from("profiles")
-        .insert({ id: userId, streak_count: 1, longest_streak: 1, last_seen_date: now });
-      return { displayName: null, streak: 1, longestStreak: 1, lastSeenDate: now };
-    }
-
-    if (existing.last_seen_date === now) {
-      return {
-        displayName: existing.display_name,
-        streak: existing.streak_count,
-        longestStreak: existing.longest_streak,
-        lastSeenDate: existing.last_seen_date,
-      };
-    }
-
-    const yesterday = new Date();
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    const wasYesterday = existing.last_seen_date === yesterday.toISOString().slice(0, 10);
-    const streak = wasYesterday ? existing.streak_count + 1 : 1;
-    const longest = Math.max(streak, existing.longest_streak);
-
-    await supabase
-      .from("profiles")
-      .update({
-        streak_count: streak,
-        longest_streak: longest,
-        last_seen_date: now,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", userId);
-
-    return {
-      displayName: existing.display_name,
-      streak,
-      longestStreak: longest,
-      lastSeenDate: now,
-    };
-  });
-
 export const getProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ProfileState & { savedCount: number }> => {

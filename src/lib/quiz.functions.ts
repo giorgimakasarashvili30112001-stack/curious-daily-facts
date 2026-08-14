@@ -18,8 +18,8 @@ export type QuizResult = {
   correctIndex: number;
   isCorrect: boolean;
   explanation: string;
-  quizStreak?: number;
-  longestQuizStreak?: number;
+  streak?: number;
+  longestStreak?: number;
   streakExtended?: boolean;
   coins?: number;
   coinsEarned?: number;
@@ -95,12 +95,12 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
 
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("quiz_streak, longest_quiz_streak, last_correct_quiz_date, coins")
+      .select("streak_count, longest_streak, last_seen_date, coins")
       .eq("id", context.userId)
       .maybeSingle();
 
-    let quizStreak = profile?.quiz_streak ?? 0;
-    let longestQuizStreak = profile?.longest_quiz_streak ?? 0;
+    let streak = profile?.streak_count ?? 0;
+    let longestStreak = profile?.longest_streak ?? 0;
     let coins = profile?.coins ?? 0;
 
     if (error) {
@@ -115,8 +115,8 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
           correctIndex: question.correct_index,
           isCorrect: existing.is_correct,
           explanation: question.explanation,
-          quizStreak,
-          longestQuizStreak,
+          streak,
+          longestStreak,
           coins,
         };
       }
@@ -126,47 +126,47 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
     let streakSaved = false;
     let coinsEarned = 0;
 
-    if (isCorrect && profile?.last_correct_quiz_date !== quizDate) {
+    if (isCorrect && profile?.last_seen_date !== quizDate) {
       const dayBefore = (offset: number) => {
         const d = new Date(`${quizDate}T00:00:00Z`);
         d.setUTCDate(d.getUTCDate() - offset);
         return d.toISOString().slice(0, 10);
       };
-      const last = profile?.last_correct_quiz_date ?? null;
+      const last = profile?.last_seen_date ?? null;
 
       coinsEarned = 1;
       coins += 1;
 
       if (last === dayBefore(1)) {
-        quizStreak = quizStreak + 1;
-      } else if (last === dayBefore(2) && quizStreak > 0 && coins >= STREAK_SAVE_COST) {
+        streak = streak + 1;
+      } else if (last === dayBefore(2) && streak > 0 && coins >= STREAK_SAVE_COST) {
         // One missed day — automatically repaired with coins.
         coins -= STREAK_SAVE_COST;
-        quizStreak = quizStreak + 1;
+        streak = streak + 1;
         streakSaved = true;
       } else {
-        quizStreak = 1;
+        streak = 1;
       }
 
-      longestQuizStreak = Math.max(longestQuizStreak, quizStreak);
+      longestStreak = Math.max(longestStreak, streak);
       streakExtended = true;
 
       await context.supabase.from("profiles").upsert(
         {
           id: context.userId,
-          quiz_streak: quizStreak,
-          longest_quiz_streak: longestQuizStreak,
-          last_correct_quiz_date: quizDate,
+          streak_count: streak,
+          longest_streak: longestStreak,
+          last_seen_date: quizDate,
           coins,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "id" },
       );
-    } else if (!isCorrect && quizStreak > 0) {
-      quizStreak = 0;
+    } else if (!isCorrect && streak > 0) {
+      streak = 0;
       await context.supabase
         .from("profiles")
-        .update({ quiz_streak: 0, updated_at: new Date().toISOString() })
+        .update({ streak_count: 0, updated_at: new Date().toISOString() })
         .eq("id", context.userId);
     }
 
@@ -175,8 +175,8 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       correctIndex: question.correct_index,
       isCorrect,
       explanation: question.explanation,
-      quizStreak,
-      longestQuizStreak,
+      streak,
+      longestStreak,
       streakExtended,
       coins,
       coinsEarned,
@@ -206,7 +206,7 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
 
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("quiz_streak, longest_quiz_streak, coins")
+      .select("streak_count, longest_streak, coins")
       .eq("id", context.userId)
       .maybeSingle();
 
@@ -215,8 +215,8 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
       correctIndex: question.correct_index,
       isCorrect: attempt.is_correct,
       explanation: question.explanation,
-      quizStreak: profile?.quiz_streak ?? 0,
-      longestQuizStreak: profile?.longest_quiz_streak ?? 0,
+      streak: profile?.streak_count ?? 0,
+      longestStreak: profile?.longest_streak ?? 0,
       coins: profile?.coins ?? 0,
     };
   });
@@ -230,15 +230,15 @@ export const getQuizStats = createServerFn({ method: "GET" })
     }): Promise<{
       answered: number;
       correct: number;
-      quizStreak: number;
-      longestQuizStreak: number;
+      streak: number;
+      longestStreak: number;
       coins: number;
     }> => {
       const [{ data }, { data: profile }] = await Promise.all([
         context.supabase.from("quiz_attempts").select("is_correct"),
         context.supabase
           .from("profiles")
-          .select("quiz_streak, longest_quiz_streak, coins")
+          .select("streak_count, longest_streak, coins")
           .eq("id", context.userId)
           .maybeSingle(),
       ]);
@@ -246,8 +246,8 @@ export const getQuizStats = createServerFn({ method: "GET" })
       return {
         answered: rows.length,
         correct: rows.filter((r) => r.is_correct).length,
-        quizStreak: profile?.quiz_streak ?? 0,
-        longestQuizStreak: profile?.longest_quiz_streak ?? 0,
+        streak: profile?.streak_count ?? 0,
+        longestStreak: profile?.longest_streak ?? 0,
         coins: profile?.coins ?? 0,
       };
     },

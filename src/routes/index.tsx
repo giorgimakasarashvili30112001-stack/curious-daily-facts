@@ -7,7 +7,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { FactCard } from "@/components/FactCard";
 import { DailyQuizCard } from "@/components/DailyQuizCard";
 import { getTodayFact } from "@/lib/facts.functions";
-import { isFactSaved, touchStreak } from "@/lib/user.functions";
+import { getProfile, isFactSaved } from "@/lib/user.functions";
 import { useSession } from "@/hooks/useSession";
 
 const todayQuery = queryOptions({
@@ -38,12 +38,12 @@ export const Route = createFileRoute("/")({
 function TodayPage() {
   const { data } = useSuspenseQuery(todayQuery);
   const { user } = useSession();
-  const streakFn = useServerFn(touchStreak);
+  const profileFn = useServerFn(getProfile);
   const savedFn = useServerFn(isFactSaved);
 
   const streak = useQuery({
-    queryKey: ["streak", user?.id],
-    queryFn: () => streakFn({}),
+    queryKey: ["profile", user?.id],
+    queryFn: () => profileFn({}),
     enabled: !!user,
   });
 
@@ -68,8 +68,6 @@ function TodayPage() {
     <AppShell>
       <AppHeader eyebrow="Today's explainer" streak={streak.data?.streak ?? null} />
 
-      <DailyQuizCard isSignedIn={!!user} />
-
       {data.fact ? (
         <FactCard
           key={data.fact.id}
@@ -80,9 +78,11 @@ function TodayPage() {
         />
       ) : (
         <p className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground">
-          Today&apos;s explainer is still being prepared. Check back in a moment.
+          Today's explainer is still being prepared. Check back in a moment.
         </p>
       )}
+
+      <DailyQuizCard isSignedIn={!!user} />
 
       {!user ? (
         <div className="mt-6 rounded-2xl border border-border bg-card p-5 text-center">

@@ -114,11 +114,8 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
-          last_correct_quiz_date: string | null
           last_seen_date: string | null
-          longest_quiz_streak: number
           longest_streak: number
-          quiz_streak: number
           streak_count: number
           updated_at: string
         }
@@ -127,11 +124,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
-          last_correct_quiz_date?: string | null
           last_seen_date?: string | null
-          longest_quiz_streak?: number
           longest_streak?: number
-          quiz_streak?: number
           streak_count?: number
           updated_at?: string
         }
@@ -140,11 +134,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
-          last_correct_quiz_date?: string | null
           last_seen_date?: string | null
-          longest_quiz_streak?: number
           longest_streak?: number
-          quiz_streak?: number
           streak_count?: number
           updated_at?: string
         }

@@ -68,7 +68,7 @@ function ProfilePage() {
         </p>
         <p className="mt-2 text-display text-5xl text-primary">{data?.streak ?? 0}</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {data?.streak === 1 ? "day in a row" : "days in a row"}
+          {data?.streak === 1 ? "correct day in a row" : "correct days in a row"}
         </p>
         <p className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
           Longest streak: <span className="text-foreground">{data?.longestStreak ?? 0}</span>

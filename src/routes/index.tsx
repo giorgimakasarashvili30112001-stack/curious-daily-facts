@@ -7,7 +7,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { FactCard } from "@/components/FactCard";
 import { DailyQuizCard } from "@/components/DailyQuizCard";
 import { getTodayFact } from "@/lib/facts.functions";
-import { isFactSaved, touchStreak } from "@/lib/user.functions";
+import { getProfile, isFactSaved } from "@/lib/user.functions";
 import { useSession } from "@/hooks/useSession";
 
 const todayQuery = queryOptions({
@@ -38,12 +38,12 @@ export const Route = createFileRoute("/")({
 function TodayPage() {
   const { data } = useSuspenseQuery(todayQuery);
   const { user } = useSession();
-  const streakFn = useServerFn(touchStreak);
+  const profileFn = useServerFn(getProfile);
   const savedFn = useServerFn(isFactSaved);
 
   const streak = useQuery({
-    queryKey: ["streak", user?.id],
-    queryFn: () => streakFn({}),
+    queryKey: ["profile", user?.id],
+    queryFn: () => profileFn({}),
     enabled: !!user,
   });
 

@@ -147,6 +147,7 @@ export type Database = {
           fact_id: string
           id: string
           is_correct: boolean
+          question_index: number
           quiz_date: string
           selected_index: number
           user_id: string
@@ -156,6 +157,7 @@ export type Database = {
           fact_id: string
           id?: string
           is_correct: boolean
+          question_index?: number
           quiz_date: string
           selected_index: number
           user_id: string
@@ -165,6 +167,7 @@ export type Database = {
           fact_id?: string
           id?: string
           is_correct?: boolean
+          question_index?: number
           quiz_date?: string
           selected_index?: number
           user_id?: string
@@ -188,6 +191,7 @@ export type Database = {
           id: string
           options: Json
           prompt: string
+          question_index: number
           updated_at: string
         }
         Insert: {
@@ -198,6 +202,7 @@ export type Database = {
           id?: string
           options?: Json
           prompt: string
+          question_index?: number
           updated_at?: string
         }
         Update: {
@@ -208,13 +213,14 @@ export type Database = {
           id?: string
           options?: Json
           prompt?: string
+          question_index?: number
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "quiz_questions_fact_id_fkey"
             columns: ["fact_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "facts"
             referencedColumns: ["id"]
           },

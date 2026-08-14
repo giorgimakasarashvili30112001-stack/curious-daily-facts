@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Coins, X } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ export function DailyQuizCard({ isSignedIn }: { isSignedIn: boolean }) {
   const grade = useServerFn(gradeQuizAnswer);
   const submit = useServerFn(submitQuizAnswer);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [result, setResult] = useState<QuizResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,6 +57,10 @@ export function DailyQuizCard({ isSignedIn }: { isSignedIn: boolean }) {
         : await grade({ data: { factId: quiz.factId, selectedIndex: index } });
       if (!outcome) return;
       setResult(outcome);
+      if (isSignedIn) {
+        void queryClient.invalidateQueries({ queryKey: ["profile"] });
+        void queryClient.invalidateQueries({ queryKey: ["quiz-stats"] });
+      }
       if (!isSignedIn) sessionStorage.setItem(storageKey(quiz.quizDate), JSON.stringify(outcome));
     } catch {
       toast.error("Could not submit your answer");

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Coins, Share2 } from "lucide-react";
+import { Coins } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { ShareSheet } from "@/components/ShareSheet";
 import { AppShell } from "@/components/AppShell";

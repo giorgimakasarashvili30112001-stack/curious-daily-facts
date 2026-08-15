@@ -44,19 +44,8 @@ export function FactCard({
     mutation.mutate();
   };
 
-  const onShare = async () => {
-    const url = `${window.location.origin}/fact/${fact.slug}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: fact.title, text: fact.hook, url });
-        return;
-      } catch {
-        // user dismissed the share sheet
-      }
-    }
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copied");
-  };
+
+
 
   return (
     <article className="overflow-hidden rounded-3xl border border-border bg-card">

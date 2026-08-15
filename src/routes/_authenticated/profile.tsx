@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Coins } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { ShareSheet } from "@/components/ShareSheet";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { getProfile, updateDisplayName } from "@/lib/user.functions";
@@ -73,6 +74,13 @@ function ProfilePage() {
         <p className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
           Longest streak: <span className="text-foreground">{data?.longestStreak ?? 0}</span>
         </p>
+        <div className="mt-4 flex justify-center">
+          <ShareSheet
+            title="Share my streak"
+            text={`I'm on a ${data?.streak ?? 0}-day streak on Daily Curiosity — one new explainer every day.`}
+            url={typeof window !== "undefined" ? window.location.origin : "https://dailycuriosity.app"}
+          />
+        </div>
       </div>
 
       <div className="mt-5 rounded-3xl border border-border bg-card p-6 text-center">

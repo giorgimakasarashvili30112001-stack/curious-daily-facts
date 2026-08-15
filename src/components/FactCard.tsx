@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bookmark, BookmarkCheck, Share2 } from "lucide-react";
+import { Bookmark, BookmarkCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { toggleFavorite } from "@/lib/user.functions";
+import { ShareSheet } from "@/components/ShareSheet";
 import type { Fact } from "@/lib/facts.functions";
+
 
 export function FactCard({
   fact,
@@ -42,19 +44,8 @@ export function FactCard({
     mutation.mutate();
   };
 
-  const onShare = async () => {
-    const url = `${window.location.origin}/fact/${fact.slug}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: fact.title, text: fact.hook, url });
-        return;
-      } catch {
-        // user dismissed the share sheet
-      }
-    }
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copied");
-  };
+
+
 
   return (
     <article className="overflow-hidden rounded-3xl border border-border bg-card">
@@ -111,14 +102,12 @@ export function FactCard({
             )}
             {saved ? "Saved" : "Save"}
           </button>
-          <button
-            type="button"
-            onClick={() => void onShare()}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-          >
-            <Share2 className="h-4 w-4" aria-hidden="true" />
-            Share
-          </button>
+          <ShareSheet
+            title={fact.title}
+            text={fact.hook}
+            url={typeof window !== "undefined" ? `${window.location.origin}/fact/${fact.slug}` : `/fact/${fact.slug}`}
+          />
+
         </div>
 
         <Link

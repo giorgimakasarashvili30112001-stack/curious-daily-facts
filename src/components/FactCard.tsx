@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bookmark, BookmarkCheck, Share2 } from "lucide-react";
+import { Bookmark, BookmarkCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { toggleFavorite } from "@/lib/user.functions";
+import { ShareSheet } from "@/components/ShareSheet";
 import type { Fact } from "@/lib/facts.functions";
+
 
 export function FactCard({
   fact,

@@ -113,14 +113,12 @@ export function FactCard({
             )}
             {saved ? "Saved" : "Save"}
           </button>
-          <button
-            type="button"
-            onClick={() => void onShare()}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-          >
-            <Share2 className="h-4 w-4" aria-hidden="true" />
-            Share
-          </button>
+          <ShareSheet
+            title={fact.title}
+            text={fact.hook}
+            url={typeof window !== "undefined" ? `${window.location.origin}/fact/${fact.slug}` : `/fact/${fact.slug}`}
+          />
+
         </div>
 
         <Link
